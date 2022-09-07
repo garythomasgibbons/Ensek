@@ -59,7 +59,7 @@ namespace EnSekTestGaryGibbons
             //get guid
             var purchaseId = Regex.Matches(purchaseResponseDeserialized.message, guidPattern);
 
-            //get orders again
+            //get orders
             var ordersResponse = await _apiclient.Get<string>(domainUrl + "orders", token);
             var ordersResponseDeserialized = JsonConvert.DeserializeObject<List<Orders>>(ordersResponse);
 
