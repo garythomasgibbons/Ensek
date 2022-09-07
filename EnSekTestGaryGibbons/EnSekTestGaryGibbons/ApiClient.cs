@@ -23,7 +23,7 @@ namespace EnSekTestGaryGibbons
             var client = new RestClient(url);
             var request = new RestRequest(Method.PUT);
 
-            AddAuthHeader(request);
+            AddAuthHeader(request, token);
 
             var restResponse = await client.ExecuteTaskAsync<T>(request);
 
@@ -59,7 +59,7 @@ namespace EnSekTestGaryGibbons
 
         private void AddAuthHeader(RestRequest request, string token="")
         {
-            if (token == "")
+            if (string.IsNullOrEmpty(token))
             {
                 request.AddHeader("Authorization", "Bearer garygibbons");
             }
