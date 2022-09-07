@@ -4,22 +4,21 @@ namespace EnSekTestGaryGibbons
 {
     public class ApiClient
     {
-        public async Task<T> Get<T>(string url)
+        public async Task<T> Get<T>(string url, string token)
         {
             var client = new RestClient(url);
             var request = new RestRequest(Method.GET);
 
-            AddAuthHeader(request);
+            AddAuthHeader(request, token);
 
             request.OnBeforeDeserialization = resp => { resp.ContentType = "application/json"; };
 
-            var restResponse = await client.ExecuteTaskAsync<T>(request);
-            
+            var restResponse = await client.ExecuteTaskAsync<T>(request);            
 
             return restResponse.Data;
         }
 
-        public async Task<T> Put<T>(string url)
+        public async Task<T> Put<T>(string url, string token)
         {
             var client = new RestClient(url);
             var request = new RestRequest(Method.PUT);
@@ -27,35 +26,47 @@ namespace EnSekTestGaryGibbons
             AddAuthHeader(request);
 
             var restResponse = await client.ExecuteTaskAsync<T>(request);
-            //ThrowOnFailure(url, restResponse);
 
             return restResponse.Data;
         }
 
-        public async Task<T> Post<T>(string url)
+        public async Task<T> Post<T>(string url, string token)
+        {
+            var client = new RestClient(url);
+            var request = new RestRequest(Method.POST);
+
+            AddAuthHeader(request, token);
+
+            var restResponse = await client.ExecuteTaskAsync<T>(request);
+
+            return restResponse.Data;
+        }
+
+        public async Task<T> Post<T>(string url, object requestBody)
         {
             var client = new RestClient(url);
             var request = new RestRequest(Method.POST);
 
             AddAuthHeader(request);
 
+            request.RequestFormat = DataFormat.Json;
+            request.AddBody(requestBody);
+
             var restResponse = await client.ExecuteTaskAsync<T>(request);
-            //ThrowOnFailure(url, restResponse);
 
             return restResponse.Data;
         }
 
-        private void ThrowOnFailure<T>(string url, IRestResponse<T> restResponse)
+        private void AddAuthHeader(RestRequest request, string token="")
         {
-            if (!restResponse.IsSuccessful)
+            if (token == "")
             {
-                throw restResponse.ErrorException ?? new ArgumentException($"{url}\r\n REST call failed. Status: {restResponse.StatusCode}. Response: {restResponse.Content}");
+                request.AddHeader("Authorization", "Bearer garygibbons");
             }
-        }
-
-        private void AddAuthHeader(RestRequest request)
-        {
-            request.AddHeader("Authorization", "bearer garygibbons");
+            else
+            {
+                request.AddHeader("Authorization", "Bearer " + token);
+            }
         }
     }
 
