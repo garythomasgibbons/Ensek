@@ -104,6 +104,9 @@ namespace EnSekTestGaryGibbons
             //Arrange 
             var token = await GetAuthToken();
 
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
+
             //Act
             //make a purchase
             var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}", token);
