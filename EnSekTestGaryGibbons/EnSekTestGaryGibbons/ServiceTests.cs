@@ -13,42 +13,46 @@ namespace EnSekTestGaryGibbons
 
         public ServiceTests()
         {
-            _apiclient = new ApiClient();   
+            _apiclient = new ApiClient();  
         }
 
         [Theory]
-        [InlineData("gas", 1, 1)]
-        [InlineData("electric", 3, 3)]
-        [InlineData("oil", 4, 4)]
-        public async Task buy_increases_order_count(string energyType, int energyId, int quantity)
+        [InlineData(1, 1)]
+        [InlineData(3, 1)]
+        [InlineData(4, 1)]
+        public async Task buy_increases_order_count(int energyId, int quantity)
         {
-            //reset data (unable to authorise bug?)
             //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
-            var initialOrdersCount = await GetNumberOfOrders();
+            var token = await GetAuthToken();
+
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
+            var initialOrdersCount = await GetNumberOfOrders(token);
 
             //Act
             //make a purchase
-            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}");
-            var newOrdersCount = await GetNumberOfOrders();
+            await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}", token);
+            var newOrdersCount = await GetNumberOfOrders(token);
 
             //assert
             newOrdersCount.Should().Be(initialOrdersCount + 1);
-        }
+        }        
 
         [Theory]
         [InlineData("gas", 1, 1)]      
         [InlineData("electric", 3, 3)]
         [InlineData("oil", 4, 4)]
-        public async Task orders_are_persisted_correctly(string energyType, int energyId, int quantity)
+        public async Task buy_orders_are_persisted_correctly(string energyType, int energyId, int quantity)
         {
-            //reset data (unable to authorise)
             //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
+            var token = await GetAuthToken();
+
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
 
             //Act
             //make a purchase
-            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}");
+            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}", token);
             var putTime = DateTime.Now.ToString("ddd, dd MMM yyy HH:mm");
             var purchaseResponseDeserialized = JsonConvert.DeserializeObject<Purchase>(purchaseResponse);
 
@@ -56,14 +60,14 @@ namespace EnSekTestGaryGibbons
             var purchaseId = Regex.Matches(purchaseResponseDeserialized.message, guidPattern);
 
             //get orders again
-            var ordersResponse = await _apiclient.Get<string>(domainUrl + "orders");
+            var ordersResponse = await _apiclient.Get<string>(domainUrl + "orders", token);
             var ordersResponseDeserialized = JsonConvert.DeserializeObject<List<Orders>>(ordersResponse);
 
             //find correct order
             var foundOrder = ordersResponseDeserialized.FirstOrDefault(res => res.id == purchaseId[0].Value);
 
             //assert
-            foundOrder.id.Should().Be(purchaseId[0].Value);
+            foundOrder.id.Should().Be(purchaseId[0].Value); //two Ids (Id, id)
             foundOrder.fuel.Should().Be(energyType);
             foundOrder.quantity.Should().Be(quantity);
             //foundOrder.time.Should().Contain(putTime); //time is not GMT
@@ -73,11 +77,13 @@ namespace EnSekTestGaryGibbons
         [InlineData("Feb", 2)]
         public async Task number_of_orders_in_a_month(string month, int expectedNumberOfOrders)
         {
-            //reset data (unable to authorise)
             //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
+            var token = await GetAuthToken();
 
-            var ordersResponse = await _apiclient.Get<string>(domainUrl + "orders");
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
+
+            var ordersResponse = await _apiclient.Get<string>(domainUrl + "orders", token);
             var ordersResponseDeserialized = JsonConvert.DeserializeObject<List<Orders>>(ordersResponse);
 
             //find orders in month
@@ -94,13 +100,12 @@ namespace EnSekTestGaryGibbons
         [InlineData(10, 100000000000)]
         public async Task bad_request_to_buy_fuel(int energyId, int quantity)
         {
-            //reset data (unable to authorise bug?)
-            //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
+            //Arrange 
+            var token = await GetAuthToken();
 
             //Act
             //make a purchase
-            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}");
+            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/{energyId}/{quantity}", token);
             var purchaseResponseDeserialized = JsonConvert.DeserializeObject<Purchase>(purchaseResponse);
 
             //assert
@@ -110,13 +115,15 @@ namespace EnSekTestGaryGibbons
         [Fact]
         public async Task buy_fuel_when_no_units_available()
         {
-            //reset data (unable to authorise bug?)
             //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
+            var token = await GetAuthToken();
+
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
 
             //Act
             //attempt to make a purchase of nuclear
-            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/2/1");
+            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/2/1", token);
             var purchaseResponseDeserialized = JsonConvert.DeserializeObject<Purchase>(purchaseResponse);
 
             //assert
@@ -126,32 +133,35 @@ namespace EnSekTestGaryGibbons
         [Fact]
         public async Task fuel_unit_quantity_is_updated()
         {
-            //reset data (unable to authorise)
             //Arrange
-            //await _apiclient.Post<string>(domainUrl + "reset");
-            var initialNumberOfElectricUnits = await GetNumberOfElectricUnits();
+            var token = await GetAuthToken();
+
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
+
+            var initialNumberOfElectricUnits = await GetNumberOfElectricUnits(token);
 
             //Act
             //make a purchase
-            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/3/3");
+            var purchaseResponse = await _apiclient.Put<string>(domainUrl + $"buy/3/1", token);
 
             //assert
-            var UpdatedNumberOfElectricUnits = await GetNumberOfElectricUnits();
+            var UpdatedNumberOfElectricUnits = await GetNumberOfElectricUnits(token);
             UpdatedNumberOfElectricUnits.Should().Be(initialNumberOfElectricUnits - 1);
         }
         
 
-        private async Task<int> GetNumberOfElectricUnits()
+        private async Task<int> GetNumberOfElectricUnits(string token)
         {
-            var energyTypeValues = await _apiclient.Get<string>(domainUrl + "energy");
+            var energyTypeValues = await _apiclient.Get<string>(domainUrl + "energy", token);
             var energyTypeValuesDeserialized = JsonConvert.DeserializeObject<Models.Utilities>(energyTypeValues);
 
             return energyTypeValuesDeserialized.electric.quantity_of_units;
         }
 
-        private async Task<int> GetNumberOfOrders()
+        private async Task<int> GetNumberOfOrders(string token)
         {
-            var initialOrdersResponse = await _apiclient.Get<string>(domainUrl + "orders");
+            var initialOrdersResponse = await _apiclient.Get<string>(domainUrl + "orders", token);
             var initialOrdersResponseDeserialized = JsonConvert.DeserializeObject<List<Orders>>(initialOrdersResponse);
 
             if (initialOrdersResponseDeserialized != null)
@@ -159,6 +169,20 @@ namespace EnSekTestGaryGibbons
                 return initialOrdersResponseDeserialized.Count;
             }
             return 0;
+        }
+
+        private async Task<string> GetAuthToken()
+        {
+            var loginResponse = await _apiclient.Post<string>(domainUrl + "login",
+                            new
+                            {
+                                username = "test",
+                                password = "testing"
+                            });
+
+            var loginResponseDeserialized = JsonConvert.DeserializeObject<dynamic>(loginResponse);
+            var token = loginResponseDeserialized.access_token.Value;
+            return token.ToString();
         }
     }
 }
