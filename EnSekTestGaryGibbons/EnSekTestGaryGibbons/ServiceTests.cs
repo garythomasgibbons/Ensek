@@ -70,7 +70,7 @@ namespace EnSekTestGaryGibbons
             foundOrder.id.Should().Be(purchaseId[0].Value); //two Ids (Id, id)
             foundOrder.fuel.Should().Be(energyType);
             foundOrder.quantity.Should().Be(quantity);
-            //foundOrder.time.Should().Contain(putTime); //time is not GMT
+            foundOrder.time.Should().Contain(putTime); //time is not GMT
         }
 
         [Theory]
@@ -97,11 +97,15 @@ namespace EnSekTestGaryGibbons
         [InlineData(0, 1)]
         [InlineData(4, 0)]
         [InlineData(3, -1)]
-        [InlineData(10, 100000000000)]
+        [InlineData(3, 10000000)]
+        [InlineData(10, 10000000)]
         public async Task bad_request_to_buy_fuel(int energyId, int quantity)
         {
             //Arrange 
             var token = await GetAuthToken();
+
+            //reset data
+            await _apiclient.Post<string>(domainUrl + "reset", token);
 
             //Act
             //make a purchase
