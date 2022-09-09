@@ -37,6 +37,11 @@
   
   ## Extra Tests
   - Sql injection to the PUT controller
-  - performance tests
-  - check that messages from each controller are relaying the correct information 
+  - Performance tests, measuring against requirements.
+  - Check that messages from each controller are relaying the correct information 
   - I would also like to have more requirements / acceptance criteria to ensure that the tests are correct
+  - More tests on the login controller
+  - More destructive testing (manual)
+  
+  ## Improvements
+  - store the token and reuse (depending on token requirements)
